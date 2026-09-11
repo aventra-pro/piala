@@ -1,1 +1,173 @@
-# piala
+# Kertajaya Piala — ERP Piala & Akrilik
+
+Sistem ERP untuk usaha piala rakitan, akrilik custom, barang jadi, dan jasa grafir.
+Berjalan sebagai web app statis (bisa di-hosting gratis di GitHub Pages) dengan database Supabase.
+Dibuka di Chrome Android akan menawarkan diri untuk dipasang sebagai aplikasi (PWA).
+
+---
+
+## Bagian 1 — Siapkan database (sekali saja, ±10 menit)
+
+### 1.1 Jalankan schema
+
+1. Buka project Supabase Anda → menu **SQL Editor** → **New query**.
+2. Buka file `supabase/schema.sql` di repo ini, salin **seluruh isinya**, tempel ke editor.
+3. Tekan **Run**. Proses ±20 detik. Beberapa pesan `NOTICE ... does not exist, skipping` itu normal.
+
+File ini aman dijalankan berulang kali — kalau nanti ada pembaruan, jalankan lagi saja.
+
+### 1.2 Buat bucket penyimpanan bukti
+
+Schema sudah otomatis membuat bucket bernama `erp-files`. Cek di menu **Storage** apakah sudah ada.
+Kalau belum: **New bucket** → nama `erp-files` → biarkan **Private** → Create.
+
+Bucket ini menyimpan bukti transfer, foto packing, foto unboxing retur, foto scrap, dan mockup desain.
+Kebijakan aksesnya sengaja hanya mengizinkan *unggah* dan *lihat* — tidak ada yang bisa mengubah atau
+menghapus bukti yang sudah masuk, termasuk Owner.
+
+### 1.3 Buat akun pertama (Owner)
+
+1. Menu **Authentication** → **Users** → **Add user** → **Create new user**.
+2. Isi email & password Anda. Centang **Auto Confirm User** supaya bisa langsung login.
+3. Kembali ke **SQL Editor**, jalankan (ganti emailnya):
+
+```sql
+insert into user_roles(user_id, role)
+select id, 'owner' from auth.users where email = 'email-anda@contoh.com';
+```
+
+Owner punya akses ke semua modul dan semua cabang.
+
+### 1.4 Atur alamat aplikasi
+
+Menu **Authentication** → **URL Configuration**:
+
+- **Site URL**: alamat aplikasi Anda, misal `https://namauser.github.io/kertajaya-piala/`
+- **Redirect URLs**: tambahkan alamat yang sama.
+
+Ini diperlukan agar tautan "lupa kata sandi" kembali ke aplikasi dengan benar.
+Untuk uji coba lokal, tambahkan juga `http://localhost:8000/`.
+
+---
+
+## Bagian 2 — Hosting di GitHub Pages
+
+1. Buat repository baru di GitHub (boleh public atau private + Pages berbayar).
+2. Unggah **semua isi folder ini** ke root repository (`index.html` harus ada di paling atas, bukan di dalam subfolder).
+3. Buka **Settings** → **Pages** → Source: **Deploy from a branch** → Branch: `main`, folder: `/ (root)` → Save.
+4. Tunggu 1–2 menit, aplikasi bisa dibuka di `https://namauser.github.io/nama-repo/`.
+
+File `.nojekyll` sudah disertakan supaya GitHub tidak memproses ulang isi folder.
+
+### Menjalankan di komputer sendiri (untuk mencoba)
+
+```bash
+cd folder-ini
+python3 -m http.server 8000
+```
+
+Lalu buka `http://localhost:8000`. Tidak ada proses build — semuanya file biasa.
+
+---
+
+## Bagian 3 — Urutan pengisian data awal
+
+Login sebagai Owner, lalu isi berurutan:
+
+| Urutan | Menu | Yang diisi |
+|---|---|---|
+| 1 | Master data → Cabang & lokasi | Gudang pusat dan tiap cabang. Lokasi stok (utama, karantina, scrap, sisa bahan) dibuat otomatis. |
+| 2 | Master data → Rekening perusahaan | Semua rekening resmi. Pembayaran pelanggan hanya boleh ke rekening di daftar ini. |
+| 3 | Master data → Channel penjualan | 13 channel sudah terisi. Sesuaikan persentase biaya admin tiap marketplace. |
+| 4 | Master data → Supplier | Pemasok komponen, akrilik, dan bahan. |
+| 5 | Master data → Produk & SKU | Komponen dulu (tatakan, tiang, figur, plat), lalu bahan baku, barang jadi, dan produk rakitan. |
+| 6 | Master data → BOM / resep | Resep tiap piala rakitan: komponen apa saja per unit, plus perkiraan waste akrilik. |
+| 7 | Master data → Pengguna & akses | Beri jabatan & cabang untuk tiap karyawan (buat akunnya dulu di Supabase Authentication). |
+| 8 | Master data → Pengaturan | Ambang approval, DP minimum, batas peringatan. |
+| 9 | Pembelian → Purchase order | Masukkan stok awal lewat PO + penerimaan barang, supaya HPP terbentuk benar. |
+
+> **Stok awal sebaiknya lewat PO**, bukan lewat penyesuaian. Dengan begitu harga beli tercatat dan
+> HPP rata-rata punya dasar yang benar sejak hari pertama.
+
+---
+
+## Bagian 4 — Cara kerja pengamanan
+
+Sistem ini dirancang supaya kecurangan butuh kerja sama beberapa orang sekaligus, bukan satu orang.
+
+**Tidak ada barang keluar tanpa dokumen.** Stok hanya berubah lewat penerimaan barang, penjualan,
+transfer, produksi, opname, atau penyesuaian yang disetujui. Aplikasi bahkan tidak punya izin menulis
+langsung ke tabel stok — semua lewat fungsi database yang memeriksa aturan.
+
+**Pemisahan tugas.** Pembuat PO tidak bisa menerima barangnya. Operator tidak bisa mem-QC hasil kerjanya
+sendiri. Penginput pembayaran tidak bisa memverifikasinya. Kasir tidak bisa menyetujui selisih kasnya.
+Rangkap jabatan yang berbahaya ditolak saat pemberian jabatan.
+
+**Tidak ada penghapusan.** Transaksi salah dibatalkan lewat void yang butuh persetujuan, dan dicatat
+sebagai jurnal pembalik. Baris lama tetap ada. Audit log tidak bisa dihapus siapa pun.
+
+**Bukti wajib.** Transfer non-tunai butuh bukti, packing butuh foto isi paket, retur butuh video/foto
+unboxing, scrap butuh foto dan nama operator, biaya butuh nota.
+
+**Rekonsiliasi tiga arah.** Faktur supplier dicocokkan dengan PO dan barang yang benar-benar diterima.
+Pembayaran dicocokkan dengan mutasi bank. Pencairan marketplace dicocokkan dengan pesanan terkirim.
+
+**Setiap selisih punya nama.** Selisih transfer, selisih kas, dan disposisi retur wajib mencantumkan
+penanggung jawab — bukan sekadar "hilang".
+
+---
+
+## Bagian 5 — Alur harian singkat
+
+**Kasir**: buka kas (hitung modal laci) → jualan → tutup kas (hitung fisik dulu, baru isi) → setor ke bank + unggah bukti.
+
+**Pesanan custom**: buat pesanan → konfirmasi → unggah mockup → catat ACC pelanggan (dengan bukti chat)
+→ DP masuk & diverifikasi keuangan → produksi jalan → QC → packing + foto → kirim.
+
+**Barang masuk**: PO → (approval bila besar) → barang datang, dihitung penerima → faktur supplier dicatat
+→ sistem cocokkan tiga arah → bayar.
+
+**Retur**: dicatat saat pelanggan mengajukan (bukan saat barang datang) → barang sampai, direkam unboxing
+→ masuk karantina → disposisi (perbaiki / jual diskon / hapus buku) dengan penanggung jawab biaya.
+
+---
+
+## Bagian 6 — Isi folder
+
+```
+index.html                  halaman utama
+manifest.webmanifest        agar bisa dipasang sebagai aplikasi
+sw.js                       service worker (cache kerangka; data tidak pernah di-cache)
+assets/css/app.css          seluruh tampilan
+assets/js/config.js         alamat & kunci Supabase
+assets/js/core.js           koneksi, komponen UI, router
+assets/js/app.js            login, menu, kerangka aplikasi
+assets/js/pages/            satu berkas per kelompok halaman
+supabase/schema.sql         seluruh database (jalankan di SQL Editor)
+supabase/parts/             sumber schema, terpisah per bagian
+```
+
+---
+
+## Pertanyaan yang sering muncul
+
+**Kunci Supabase terlihat di kode, apakah aman?**
+Ya. Kunci publishable memang dirancang untuk dipasang di aplikasi web. Yang menjaga data adalah Row Level
+Security dan fungsi database: pengguna hanya bisa melihat cabangnya sendiri, dan semua penulisan harus
+lewat fungsi yang memeriksa jabatan serta pemisahan tugas.
+
+**Karyawan baru tidak bisa login.**
+Akun dibuat di Supabase → Authentication → Users. Setelah itu beri jabatan dan cabang lewat menu
+Pengguna & akses. Tanpa jabatan, aplikasi akan menampilkan pesan "menunggu jabatan".
+
+**Ada yang salah input kemarin, hapus saja bisa?**
+Tidak bisa, dan memang disengaja. Gunakan void (butuh persetujuan) atau penyesuaian dengan alasan.
+Riwayatnya tetap ada supaya bisa ditelusuri.
+
+**HPP produk kok tidak sesuai?**
+HPP dihitung rata-rata bergerak dari pembelian yang benar-benar masuk. Untuk produk rakitan, buka
+Master data → BOM lalu tekan "Hitung ulang HPP semua" setelah resep atau harga komponen berubah.
+
+**Aplikasi tidak menawarkan "pasang ke layar utama".**
+Buka lewat Chrome Android dengan alamat `https://` (bukan `file://`), dan pastikan sudah dibuka
+beberapa detik. Bisa juga lewat menu titik tiga → "Tambahkan ke layar utama".
