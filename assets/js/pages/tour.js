@@ -1,7 +1,6 @@
-// Perkenalan bertahap saat pertama kali masuk.
-// Isinya menjelaskan tiap menu: apa gunanya, apa isinya, dan bagaimana
-// pekerjaan jabatan lain menyambung ke situ.
-import { S, can, esc, h, $, $$, on, rpc, toast, errMsg, go } from '../core.js';
+// Perkenalan bertahap: menyorot menu aslinya di sidebar sambil menjelaskan
+// apa gunanya, apa isinya, dan bagaimana jabatan lain menyambung ke situ.
+import { S, can, h, $, on, rpc, errMsg, go } from '../core.js';
 
 const STEPS = [
   {
@@ -12,85 +11,115 @@ const STEPS = [
       <ol><li><b>Tidak ada barang keluar tanpa dokumen.</b> Stok tidak bisa diketik ulang; ia berubah hanya lewat penerimaan, penjualan, transfer, produksi, atau opname.</li>
       <li><b>Satu orang tidak menutup satu lingkaran sendiri.</b> Yang memesan bukan yang menerima, yang menginput bukan yang memverifikasi.</li>
       <li><b>Tidak ada yang dihapus.</b> Salah input dibatalkan lewat void yang tercatat, bukan dihilangkan.</li></ol>
-      <p class="small muted">Perkenalan ini menyesuaikan jabatan Anda — yang tidak Anda pakai tidak ditampilkan. Bisa dibuka lagi kapan saja lewat menu akun.</p>`,
+      <p class="small muted">Selanjutnya saya akan menunjuk langsung menunya satu per satu. Yang tidak Anda pakai tidak ditampilkan.</p>`,
   },
   {
-    id: 'home', icon: '📊', title: 'Beranda & Peringatan', route: 'home',
+    id: 'home', icon: '📊', title: 'Beranda', nav: 'home',
     need: () => can('dashboard'),
-    body: `<p>Beranda menunjukkan perjalanan uang dari omzet kotor sampai laba bersih, lengkap dengan potongan di tiap tahap: retur, diskon, biaya marketplace, HPP, kerugian stok, lalu biaya operasional.</p>
-      <p><b>Isinya datang dari kerja orang lain:</b> angka omzet muncul saat kasir dan admin online menyelesaikan transaksi; HPP terbentuk dari harga beli yang diinput pembelian; kerugian stok muncul dari hasil opname gudang.</p>
-      <p>Menu <b>Peringatan</b> memunculkan hal yang butuh perhatian: stok menipis, retur yang tak kunjung datang, transfer menggantung, selisih kas, piutang lewat tempo.</p>`,
+    body: `<p>Menunjukkan perjalanan uang dari omzet kotor sampai laba bersih, lengkap dengan potongan di tiap tahap: retur, diskon, biaya marketplace, HPP, kerugian stok, lalu biaya operasional.</p>
+      <p><b>Isinya datang dari kerja orang lain:</b> omzet muncul saat kasir dan admin online menyelesaikan transaksi; HPP terbentuk dari harga beli yang diinput pembelian; kerugian stok muncul dari hasil opname gudang.</p>`,
   },
   {
-    id: 'pos', icon: '🧾', title: 'Kasir', route: 'pos',
+    id: 'alerts', icon: '🔔', title: 'Peringatan & lonceng', nav: 'alerts',
+    need: () => true,
+    body: `<p>Lonceng di kanan atas mengumpulkan tiga hal: <b>tugas</b> yang menunggu keputusan Anda, <b>pengumuman</b> yang belum dibaca, dan <b>peringatan</b> operasional.</p>
+      <p>Peringatan muncul sendiri: stok menipis, retur yang tak kunjung datang, transfer menggantung, selisih kas, piutang lewat tempo, sampai pola void kasir yang tidak wajar.</p>`,
+  },
+  {
+    id: 'approvals', icon: '✅', title: 'Approval', nav: 'approvals',
+    need: () => true,
+    body: `<p>Semua yang perlu Anda setujui atau tolak berkumpul di sini. Setiap keputusan wajib disertai catatan dan tercatat di audit log dengan nama Anda.</p>
+      <p>Sistem menolak jika Anda mencoba menyetujui sesuatu yang Anda buat sendiri — bukan karena tidak percaya, tapi supaya tidak ada satu orang pun yang bisa disalahkan sendirian kalau terjadi masalah.</p>`,
+  },
+  {
+    id: 'pos', icon: '🧾', title: 'Kasir', nav: 'pos',
     need: () => can('pos'),
     body: `<p>Mulai giliran dengan <b>buka kas</b> — hitung uang modal di laci lalu catat. Akhiri dengan <b>tutup kas</b>: hitung fisik dulu, baru masukkan angkanya.</p>
-      <p>Diskon di atas batas jabatan Anda tidak ditolak, tapi transaksinya <b>ditahan</b> sampai kepala cabang menyetujui. Begitu juga void: Anda mengajukan, atasan yang memutuskan.</p>
-      <p><b>Sambungannya:</b> setiap penjualan langsung mengurangi stok yang dilihat gudang, dan uang tunainya jadi tanggung jawab Anda sampai disetor ke bank dan diverifikasi keuangan.</p>`,
+      <p>Diskon di atas batas jabatan Anda tidak ditolak, tapi transaksinya <b>ditahan</b> sampai kepala cabang menyetujui. Begitu juga void: Anda mengajukan, atasan memutuskan.</p>
+      <p><b>Sambungannya:</b> tiap penjualan langsung mengurangi stok yang dilihat gudang, dan uang tunainya jadi tanggung jawab Anda sampai disetor ke bank dan diverifikasi keuangan.</p>`,
   },
   {
-    id: 'sales', icon: '📋', title: 'Pesanan & Penawaran', route: 'sales',
+    id: 'sales', icon: '📋', title: 'Pesanan', nav: 'sales',
     need: () => can('sales'),
-    body: `<p>Semua pesanan dari channel mana pun masuk ke sini: WhatsApp, Instagram, marketplace, instansi, sampai walk-in. Tiap pesanan wajib punya channel dan kontak pelanggan.</p>
-      <p>Untuk produk custom, mengkonfirmasi pesanan otomatis membuat <b>perintah kerja</b> untuk produksi dan memesan (reserve) stok komponennya, supaya tidak terjual dobel di kasir.</p>
+    body: `<p>Semua pesanan dari channel mana pun masuk ke sini: WhatsApp, Instagram, marketplace, instansi, sampai walk-in.</p>
+      <p>Untuk produk custom, mengkonfirmasi pesanan otomatis membuat <b>perintah kerja</b> dan memesan stok komponennya supaya tidak terjual dobel di kasir.</p>
       <p><b>Sambungannya:</b> desainer mengunggah mockup di sini, Anda mencatat bukti ACC pelanggan, keuangan memverifikasi DP-nya, baru produksi boleh mulai. Tanpa salah satu, tombol berikutnya tidak terbuka.</p>`,
   },
   {
-    id: 'production', icon: '🏭', title: 'Produksi & Desain', route: 'production',
+    id: 'production', icon: '🏭', title: 'Papan produksi', nav: 'production',
     need: () => can('production') || can('design'),
-    body: `<p>Papan produksi menampilkan perintah kerja dari kiri ke kanan: menunggu desain, menunggu ACC pelanggan, siap dikerjakan, dikerjakan, QC, selesai.</p>
+    body: `<p>Perintah kerja bergerak dari kiri ke kanan: menunggu desain, menunggu ACC pelanggan, siap dikerjakan, dikerjakan, QC, selesai.</p>
       <p>Pekerjaan baru bisa dimulai kalau <b>desain sudah di-ACC pelanggan dengan bukti</b> dan <b>DP sudah diverifikasi keuangan</b>. Ini yang mencegah piala tergrafir nama salah atau dikerjakan tanpa uang muka.</p>
-      <p>Bahan diambil sesuai BOM. Barang rusak dicatat sebagai <b>scrap</b> — wajib foto, penyebab, dan nama operator. Sisa potongan akrilik yang masih layak dicatat supaya dipakai lagi, bukan dibuang.</p>
-      <p><b>Sambungannya:</b> operator tidak boleh mem-QC hasil kerjanya sendiri; QC dilakukan orang lain sebelum barang boleh dikirim.</p>`,
+      <p>Barang rusak dicatat sebagai <b>scrap</b> — wajib foto, penyebab, dan nama operator. <b>Sambungannya:</b> operator tidak boleh mem-QC hasil kerjanya sendiri.</p>`,
   },
   {
-    id: 'delivery', icon: '📦', title: 'Pengiriman & Klaim', route: 'delivery',
+    id: 'delivery', icon: '📦', title: 'Pengiriman', nav: 'delivery',
     need: () => can('logistics') || can('claims'),
     body: `<p>Barang keluar hanya dengan surat jalan. Saat packing, sistem meminta Anda <b>memindai tiap barang</b> sampai cocok dengan pesanan, lalu <b>memfoto isi paket</b> sebelum ditutup.</p>
-      <p>Foto itu bukan formalitas: ketika pelanggan mengaku barang kurang, foto inilah yang menyelesaikan perdebatan. Paket hilang atau rusak diajukan sebagai <b>klaim ke ekspedisi</b>, bukan langsung dianggap rugi toko.</p>
+      <p>Foto itu bukan formalitas: ketika pelanggan mengaku barang kurang, foto inilah yang menyelesaikan perdebatan.</p>
       <p><b>Sambungannya:</b> begitu paket dikirim, pendapatan baru diakui dan HPP dibukukan — itulah momen penjualan menjadi nyata di laporan keuangan.</p>`,
   },
   {
-    id: 'returns', icon: '↩️', title: 'Retur', route: 'returns',
+    id: 'returns', icon: '↩️', title: 'Retur', nav: 'returns',
     need: () => can('returns') || can('return_receive'),
     body: `<p>Retur dicatat <b>saat pelanggan mengajukan</b>, bukan saat barang datang. Sejak itu nilainya masuk pantauan "Retur Dalam Perjalanan" sehingga barang yang tak pernah sampai akan ketahuan.</p>
-      <p>Saat barang tiba, penerima wajib merekam/memfoto proses buka paket. Barang masuk <b>karantina</b> — belum jadi stok jual — sampai ada keputusan: diperbaiki, dijual diskon, atau dihapus buku.</p>
-      <p><b>Sambungannya:</b> penerima retur tidak boleh orang yang memproses refund. Setiap disposisi wajib menyebut pihak yang menanggung biayanya, dan itu bisa berujung ke potongan gaji lewat modul SDM.</p>`,
+      <p>Saat barang tiba, penerima wajib merekam proses buka paket. Barang masuk <b>karantina</b> sampai ada keputusan: diperbaiki, dijual diskon, atau dihapus buku.</p>
+      <p><b>Sambungannya:</b> penerima retur tidak boleh orang yang memproses refund, dan setiap disposisi wajib menyebut pihak yang menanggung biayanya.</p>`,
   },
   {
-    id: 'stock', icon: '📦', title: 'Persediaan & Opname', route: 'stock',
-    need: () => can('stock') || can('opname'),
+    id: 'stock', icon: '🗃️', title: 'Stok per lokasi', nav: 'stock',
+    need: () => can('stock'),
     body: `<p>Stok selalu melekat pada <b>lokasi</b>, bukan sekadar cabang: utama, karantina retur, scrap, dan sisa bahan. Kolom "bisa dijual" sudah dikurangi barang yang dipesan pelanggan dan yang dialokasikan ke marketplace.</p>
-      <p>Transfer antar cabang berjalan dua langkah: barang masuk status "dalam perjalanan" saat dikirim, dan baru jadi stok cabang setelah penerima <b>menghitung ulang</b>. Selisih memicu berita acara yang wajib menyebut penanggung jawab.</p>
-      <p>Stock opname memakai <b>hitung buta</b> — angka sistem disembunyikan saat menghitung, supaya hasilnya jujur, bukan disesuaikan.</p>`,
+      <p>Transfer antar cabang berjalan dua langkah: barang berstatus "dalam perjalanan" saat dikirim, dan baru jadi stok cabang setelah penerima <b>menghitung ulang</b>.</p>`,
   },
   {
-    id: 'purchasing', icon: '🛒', title: 'Pembelian', route: 'po',
+    id: 'opname', icon: '🔢', title: 'Stock opname', nav: 'opname',
+    need: () => can('opname'),
+    body: `<p>Memakai <b>hitung buta</b> — angka sistem disembunyikan saat menghitung, supaya hasilnya jujur, bukan disesuaikan.</p>
+      <p>Cycle count memilih SKU paling laris untuk dihitung rutin tanpa menutup toko. Selisih apa pun wajib disetujui atasan, dan nilainya masuk laporan shrinkage cabang.</p>`,
+  },
+  {
+    id: 'po', icon: '🛒', title: 'Pembelian', nav: 'po',
     need: () => can('purchasing') || can('grn') || can('sup_invoice'),
     body: `<p>Semua pembelian lewat PO. Barang tidak bisa diterima tanpa acuan PO, dan <b>pembuat PO tidak boleh jadi penerima barang</b>.</p>
-      <p>Faktur supplier dicocokkan tiga arah: PO, barang yang benar-benar diterima, dan nilai faktur. Yang tidak cocok otomatis diblokir dan tidak bisa dibayar sebelum keuangan memutuskan.</p>
-      <p><b>Sambungannya:</b> harga beli yang Anda input membentuk HPP rata-rata, yang menentukan apakah harga jual masih untung. Riwayat harga per supplier bisa dilihat di Laporan.</p>`,
+      <p>Faktur supplier dicocokkan tiga arah: PO, barang yang benar-benar diterima, dan nilai faktur. Yang tidak cocok otomatis diblokir.</p>
+      <p><b>Sambungannya:</b> harga beli yang Anda input membentuk HPP rata-rata, yang menentukan apakah harga jual masih untung.</p>`,
   },
   {
-    id: 'finance', icon: '💰', title: 'Keuangan', route: 'payments',
-    need: () => can('payments') || can('receivables') || can('cash') || can('accounting'),
+    id: 'payments', icon: '💰', title: 'Keuangan', nav: 'payments',
+    need: () => can('payments') || can('receivables') || can('cash'),
     body: `<p>Pembayaran baru sah setelah <b>dicocokkan dengan mutasi rekening</b>. Sebelum itu statusnya menunggu verifikasi dan belum mengurangi tagihan pelanggan.</p>
-      <p>Kas cabang, setoran ke bank, biaya operasional, utang supplier, dan pencairan marketplace semuanya bermuara ke jurnal yang dibuat otomatis. Tidak ada entri manual, jadi angka laporan keuangan tidak bisa dikarang.</p>
+      <p>Kas cabang, setoran ke bank, biaya, utang supplier, dan pencairan marketplace semuanya bermuara ke jurnal otomatis — tidak ada entri manual.</p>
       <p><b>Sambungannya:</b> DP yang Anda verifikasi membuka kunci produksi. Verifikasi yang tertunda berarti pesanan pelanggan ikut tertunda.</p>`,
   },
   {
-    id: 'hr', icon: '👥', title: 'SDM & Penggajian', route: 'employees',
-    need: () => can('employees') || can('payroll') || can('attendance'),
-    body: `<p>Data karyawan, absensi harian, skema gaji, kasbon, dan penggajian bulanan.</p>
-      <p>Gaji dihitung dari data yang sudah ada di sistem: hari hadir dari absensi, lembur dari jam tercatat, upah borongan dari unit yang <b>lulus QC</b>, dan komisi penjualan dari <b>laba</b> pesanan — bukan omzet, supaya obral diskon merugikan komisi si penjual sendiri.</p>
-      <p><b>Sambungannya:</b> selisih kas, scrap, dan retur yang sudah ditetapkan penanggung jawabnya muncul di sini sebagai usulan potongan. Potongan dibatasi persentase tertentu dari gaji, sisanya ditunda — bukan dihanguskan.</p>`,
+    id: 'payroll', icon: '👥', title: 'Penggajian', nav: 'payroll',
+    need: () => can('payroll'),
+    body: `<p>Gaji dirakit dari data yang sudah ada: hari hadir dari absensi, lembur dari jam tercatat, upah borongan dari unit yang <b>lulus QC</b>, dan komisi dari <b>laba</b> pesanan — bukan omzet, supaya obral diskon merugikan komisi si penjual sendiri.</p>
+      <p><b>Sambungannya:</b> selisih kas, scrap, dan retur yang sudah ditetapkan penanggung jawabnya muncul sebagai usulan potongan. Potongan dibatasi persentase tertentu dari gaji; sisanya ditunda, bukan dihanguskan.</p>`,
   },
   {
-    id: 'approvals', icon: '✅', title: 'Approval & Notifikasi', route: 'approvals',
+    id: 'employees', icon: '🧑‍💼', title: 'Karyawan & absensi', nav: 'employees',
+    need: () => can('employees') || can('attendance'),
+    body: `<p>Data kepegawaian dan skema gaji. Absensi harian diisi di menu terpisah dan menjadi dasar tunjangan kehadiran, uang makan, lembur, serta potongan ketidakhadiran.</p>
+      <p>Setelah gaji periode itu disetujui, absensinya terkunci — tidak bisa diubah belakangan.</p>`,
+  },
+  {
+    id: 'reports', icon: '📈', title: 'Laporan', nav: 'reports',
+    need: () => can('reports') || can('dashboard'),
+    body: `<p>Sepuluh laporan untuk memutuskan, bukan sekadar melihat: margin per channel, produk paling menguntungkan, stok mati, shrinkage per cabang, rekonsiliasi retur, scrap per operator, audit void kasir, riwayat selisih opname, riwayat harga supplier, dan produktivitas produksi.</p>`,
+  },
+  {
+    id: 'announcements', icon: '📣', title: 'Pengumuman', nav: 'announcements',
     need: () => true,
-    body: `<p>Lonceng di kanan atas mengumpulkan tiga hal: <b>pengumuman</b> yang belum Anda baca, <b>peringatan</b> operasional, dan <b>tugas</b> yang menunggu keputusan Anda.</p>
-      <p>Halaman Approval memuat semua yang perlu Anda setujui atau tolak. Setiap keputusan wajib disertai catatan dan tercatat di audit log dengan nama Anda.</p>
-      <p>Sistem akan menolak jika Anda mencoba menyetujui sesuatu yang Anda buat sendiri — bukan karena tidak percaya, tapi supaya tidak ada satu orang pun yang bisa disalahkan sendirian kalau terjadi masalah.</p>`,
+    body: `<p>Kabar internal untuk tim. Bisa ditujukan ke jabatan atau cabang tertentu, disematkan supaya selalu tampil, dan diberi tanda wajib konfirmasi dibaca.</p>
+      <p>Pembuatnya bisa melihat siapa saja yang sudah membaca — berguna untuk perubahan aturan atau harga.</p>`,
+  },
+  {
+    id: 'settings', icon: '⚙️', title: 'Pengaturan & data contoh', nav: 'settings',
+    need: () => can('settings'),
+    body: `<p>Ambang batas yang mengatur kapan sistem meminta approval dan kapan memunculkan peringatan: nilai PO yang butuh persetujuan, DP minimum, batas umur retur, ambang shrinkage, dan lainnya.</p>
+      <p>Di halaman yang sama ada tombol <b>hapus data contoh</b> — jalankan sebelum mulai memakai sistem untuk data sungguhan. Kalau ingin berlatih lagi nanti, data contoh bisa dipasang ulang dari tempat yang sama.</p>`,
   },
   {
     id: 'end', icon: '🏁', title: 'Sudah siap',
@@ -107,44 +136,117 @@ export function tourSteps() { return STEPS.filter(s => s.need()); }
 
 export function startTour({ force = false } = {}) {
   if (!force && S.me?.onboarded_at) return false;
-  const steps = tourSteps();
+  if (document.querySelector('.tour-pop')) return false;
+  const steps = tourSteps().filter(s => !s.nav || $(`.side .nav-items a[data-r="${s.nav}"]`));
+  if (!steps.length) return false;
   let i = 0;
-  const back = h(`<div class="modal-back tour"><div class="modal" role="dialog" aria-modal="true">
-    <div class="mh"><span class="tour-icon" data-icon></span><h2 data-title></h2><span class="small muted" data-count></span></div>
-    <div class="mb" data-body></div>
-    <div class="mf">
-      <button class="btn ghost" data-skipall>Lewati semua</button>
-      <span style="flex:1"></span>
-      <button class="btn" data-prev>Kembali</button>
-      <button class="btn primary" data-next>Lanjut</button>
-    </div></div></div>`);
+
+  const shell = $('.shell');
+  const wasDrawer = !!shell?.classList.contains('drawer');
+  const dim = h('<div class="tour-dim"></div>');
+  const hole = h('<div class="tour-hole" hidden></div>');
+  const pop = h(`<div class="tour-pop" role="dialog" aria-modal="true" aria-live="polite">
+    <div class="th"><span class="tour-icon" data-icon></span><h2 data-title></h2></div>
+    <div class="tb" data-body></div>
+    <div class="tf">
+      <button class="btn ghost sm" data-skipall>Lewati semua</button>
+      <span class="grow"></span>
+      <span class="tour-dots" data-dots></span>
+      <button class="btn sm" data-prev aria-label="Sebelumnya">←</button>
+      <button class="btn primary sm" data-next>Lanjut</button>
+    </div></div>`);
+  document.body.append(dim, hole, pop);
+  hole.style.pointerEvents = 'auto';
+  hole.style.cursor = 'pointer';
+
+  const isNarrow = () => window.innerWidth <= 900;
+  const target = () => steps[i].nav ? $(`.side .nav-items a[data-r="${steps[i].nav}"]`) : null;
+
+  const place = () => {
+    const el = target();
+    const pw = pop.offsetWidth, ph = pop.offsetHeight;
+    if (!el) {
+      hole.hidden = true;
+      pop.dataset.arrow = 'none';
+      pop.style.left = `${Math.max(12, (window.innerWidth - pw) / 2)}px`;
+      pop.style.top = `${Math.max(12, (window.innerHeight - ph) / 2)}px`;
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    if (r.width === 0) { hole.hidden = true; return; }
+    hole.hidden = false;
+    hole.style.left = `${r.left - 4}px`;
+    hole.style.top = `${r.top - 3}px`;
+    hole.style.width = `${r.width + 8}px`;
+    hole.style.height = `${r.height + 6}px`;
+
+    const gap = 16;
+    if (!isNarrow() && window.innerWidth - r.right > pw + gap) {
+      pop.dataset.arrow = 'left';
+      pop.style.left = `${r.right + gap}px`;
+      const top = Math.min(Math.max(12, r.top - 24), Math.max(12, window.innerHeight - ph - 12));
+      pop.style.top = `${top}px`;
+      pop.style.setProperty('--ay', `${Math.max(14, Math.min(ph - 28, r.top + r.height / 2 - top - 7))}px`);
+    } else {
+      const below = r.bottom + gap + ph < window.innerHeight - 8;
+      pop.dataset.arrow = below ? 'top' : 'bottom';
+      const left = isNarrow() ? 8 : Math.max(12, Math.min(r.left, window.innerWidth - pw - 12));
+      pop.style.left = `${left}px`;
+      pop.style.top = below ? `${r.bottom + gap}px` : `${Math.max(12, r.top - gap - ph)}px`;
+      pop.style.setProperty('--ax', `${Math.max(16, Math.min(pw - 30, r.left + r.width / 2 - left - 7))}px`);
+    }
+  };
+
   const draw = () => {
     const s = steps[i];
-    $('[data-icon]', back).textContent = s.icon;
-    $('[data-title]', back).textContent = s.title;
-    $('[data-count]', back).textContent = `${i + 1} / ${steps.length}`;
-    $('[data-body]', back).innerHTML = s.body + (s.route ? `<p style="margin-top:12px"><button class="btn sm" data-goto="${s.route}">Buka menu ini sekarang</button></p>` : '');
-    $('[data-prev]', back).disabled = i === 0;
-    $('[data-next]', back).textContent = i === steps.length - 1 ? 'Selesai' : 'Lanjut';
-    $('[data-body]', back).scrollTop = 0;
+    $('[data-icon]', pop).textContent = s.icon;
+    $('[data-title]', pop).textContent = s.title;
+    $('[data-body]', pop).innerHTML = s.body;
+    $('[data-dots]', pop).innerHTML = steps.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('');
+    $('[data-prev]', pop).disabled = i === 0;
+    $('[data-next]', pop).textContent = i === steps.length - 1 ? 'Selesai' : 'Lanjut';
+    $('[data-body]', pop).scrollTop = 0;
+
+    if (s.nav) {
+      if (isNarrow()) shell?.classList.add('drawer');
+      const el = target();
+      if (el) {
+        const grp = el.closest('.nav-group');
+        if (grp?.classList.contains('closed')) grp.classList.remove('closed');
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
+    } else if (isNarrow()) {
+      shell?.classList.remove('drawer');
+    }
+    requestAnimationFrame(place);
+    setTimeout(place, 300);
   };
+
   const finish = async () => {
-    back.remove();
+    dim.remove(); hole.remove(); pop.remove();
+    window.removeEventListener('resize', place);
+    window.removeEventListener('scroll', place, true);
     document.removeEventListener('keydown', key);
+    if (!wasDrawer) shell?.classList.remove('drawer');
     try { await rpc('set_onboarded', { p_done: true }); if (S.me) S.me.onboarded_at = new Date().toISOString(); }
     catch (e) { console.warn(errMsg(e)); }
   };
+  const next = () => { if (i < steps.length - 1) { i++; draw(); } else finish(); };
+  const prev = () => { if (i > 0) { i--; draw(); } };
   const key = (e) => {
     if (e.key === 'Escape') finish();
-    if (e.key === 'ArrowRight') { if (i < steps.length - 1) { i++; draw(); } }
-    if (e.key === 'ArrowLeft') { if (i > 0) { i--; draw(); } }
+    else if (e.key === 'ArrowRight') next();
+    else if (e.key === 'ArrowLeft') prev();
   };
   document.addEventListener('keydown', key);
-  on(back, '[data-next]', 'click', () => { if (i < steps.length - 1) { i++; draw(); } else finish(); });
-  on(back, '[data-prev]', 'click', () => { if (i > 0) { i--; draw(); } });
-  on(back, '[data-skipall]', 'click', finish);
-  on(back, '[data-goto]', 'click', (e, b) => { finish(); go(b.dataset.goto); });
-  document.body.appendChild(back);
+  window.addEventListener('resize', place);
+  window.addEventListener('scroll', place, true);
+  on(pop, '[data-next]', 'click', next);
+  on(pop, '[data-prev]', 'click', prev);
+  on(pop, '[data-skipall]', 'click', finish);
+  dim.addEventListener('click', finish);
+  hole.addEventListener('click', () => { const s = steps[i]; if (s.nav) go(s.nav); next(); });
+
   draw();
   return true;
 }
