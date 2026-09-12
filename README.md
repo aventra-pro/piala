@@ -16,6 +16,10 @@ Dibuka di Chrome Android akan menawarkan diri untuk dipasang sebagai aplikasi (P
 
 File ini aman dijalankan berulang kali — kalau nanti ada pembaruan, jalankan lagi saja.
 
+> **Begitu Run selesai, sistem sudah berisi data contoh.** Panel hasil akan menampilkan
+> pesan `Masuk dengan owner@kertajayapiala.demo / Demo#2026`. Anda bisa langsung login
+> tanpa membuat akun apa pun dulu. Kalau ingin memakai akun sendiri, ikuti langkah 1.3.
+
 ### 1.2 Buat bucket penyimpanan bukti
 
 Schema sudah otomatis membuat bucket bernama `erp-files`. Cek di menu **Storage** apakah sudah ada.
@@ -51,13 +55,13 @@ Untuk uji coba lokal, tambahkan juga `http://localhost:8000/`.
 
 ---
 
-## Bagian 1B — Isi data contoh (sangat disarankan untuk mencoba)
+## Bagian 1B — Data contoh
 
-Sebelum memasukkan data sungguhan, isi dulu sistem dengan data contoh supaya semua menu bisa
-dijelajahi dan tim bisa berlatih tanpa takut merusak apa pun.
+Data contoh **dipasang otomatis** saat `schema.sql` dijalankan pertama kali di database kosong.
+Jadi begitu aplikasi dibuka, semua menu sudah ada isinya dan bisa langsung dijelajahi.
 
-Login sebagai Owner → **Master data → Pengaturan** → bagian **Data contoh** → **Pasang data contoh**.
-(Atau jalankan `select seed_demo();` di SQL Editor.)
+Setelah login, muncul bilah kuning di atas layar sebagai pengingat bahwa ini data contoh,
+lengkap dengan tautan untuk mengelolanya. Bilah itu bisa disembunyikan.
 
 Yang dibuat:
 
@@ -88,10 +92,15 @@ Akun contoh (semua `@kertajayapiala.demo`):
 
 Selebihnya: `gudang@`, `desain@`, `operator2@`, `kepalacabang2@`, `kasir2@`, `akuntansi@`, `absensi@`.
 
-**Menghapus data contoh:** Pengaturan → Data contoh → **Hapus semua data contoh**, lalu ketik
-`HAPUS DATA CONTOH`. Ini mengosongkan seluruh transaksi, produk, pelanggan, cabang, dan akun demo.
-Master jabatan, channel penjualan, dan bagan akun tetap ada. Lakukan sebelum mulai memakai
-sistem untuk data sungguhan.
+### Menghapus dan memasang ulang
+
+Keduanya ada di satu tempat: **Master data → Pengaturan → bagian Data contoh** (paling bawah).
+
+- **Hapus semua data contoh** — ketik `HAPUS DATA CONTOH` sebagai konfirmasi. Mengosongkan seluruh
+  transaksi, produk, pelanggan, cabang, karyawan, dan akun demo. Master jabatan, channel penjualan,
+  dan bagan akun tetap ada. **Lakukan ini sebelum mulai memakai sistem untuk data sungguhan.**
+- **Pasang data contoh** — tombol ini muncul di tempat yang sama setelah data contoh dihapus,
+  kalau sewaktu-waktu ingin berlatih lagi.
 
 > Data contoh hanya bisa dipasang saat belum ada transaksi sungguhan, jadi tidak mungkin tercampur
 > dengan data asli Anda.
@@ -208,9 +217,14 @@ melihat antrean approval PO.
 selalu tampil, dan diberi tanda "wajib konfirmasi dibaca". Pembuatnya bisa melihat siapa saja yang
 sudah membaca dan mengkonfirmasi — berguna untuk perubahan aturan atau harga.
 
-**Perkenalan menu** muncul otomatis saat seseorang login pertama kali. Isinya menjelaskan tiap menu:
-apa gunanya, apa isinya, dan bagaimana pekerjaan jabatan lain menyambung ke situ. Bisa dilewati
-satu per satu atau sekaligus, dan dibuka lagi kapan saja lewat menu akun di kanan atas.
+**Perkenalan menu** muncul otomatis saat seseorang login pertama kali. Layar digelapkan dan menu
+yang sedang dibahas **disorot langsung di sidebar**, dengan kotak penjelasan berpanah yang menunjuk
+ke sana. Isinya menjelaskan apa gunanya menu itu, apa isinya, dan bagaimana pekerjaan jabatan lain
+menyambung ke situ.
+
+Langkahnya menyesuaikan jabatan — kasir tidak diperkenalkan pada menu penggajian. Bisa dilewati
+satu per satu (Lanjut), sekaligus (Lewati semua), atau ditutup dengan Esc. Panah kiri/kanan di
+keyboard juga berfungsi. Untuk membukanya lagi: menu akun di kanan atas → **Ulangi perkenalan**.
 
 ---
 
@@ -282,7 +296,11 @@ sistem untuk data asli, bukan sesudahnya.
 **Akun demo tidak bisa login.**
 Kalau pemasangan data contoh gagal membuat akun (versi Supabase berbeda-beda), sistem akan memberi
 tahu akun mana yang gagal. Buat akun itu manual di Authentication → Users dengan email yang sama,
-lalu pasang ulang data contohnya.
+lalu pasang ulang data contohnya lewat Pengaturan.
+
+**Data contoh tidak terpasang otomatis saat menjalankan schema.**
+Itu berarti database sudah berisi data, atau pembuatan akun gagal. Pesannya muncul di panel hasil
+SQL Editor. Pasang manual lewat Master data → Pengaturan → Data contoh.
 
 **Bisakah perkenalan menu dimatikan untuk semua orang?**
 Perkenalan hanya muncul sekali per orang. Setelah diselesaikan atau dilewati, ia tidak muncul lagi
