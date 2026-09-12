@@ -376,15 +376,34 @@ route('settings', {
           actions: [{ label: 'Muat ulang aplikasi', kind: 'primary', onClick: () => location.reload() }] });
       } catch (err) { toast(errMsg(err), 'err'); }
     });
-    $('#purge', el)?.addEventListener('click', async () => {
-      const t = await ask('Hapus semua data contoh',
-        'Seluruh transaksi, produk, pelanggan, cabang, karyawan, dan akun demo akan dihapus permanen. Master jabatan, channel, dan bagan akun tetap ada.',
-        { label: 'Ketik persis: HAPUS DATA CONTOH', minLen: 18, danger: true, okLabel: 'Hapus permanen', placeholder: 'HAPUS DATA CONTOH' });
-      if (!t) return;
-      try { const r = await rpc('purge_demo', { p_confirm: t.trim() });
-        toast(`Data contoh dihapus (${r.akun_dihapus} akun).`);
-        setTimeout(() => location.reload(), 1200);
-      } catch (err) { toast(errMsg(err), 'err'); }
+    $('#purge', el)?.addEventListener('click', () => {
+      const FRASA = 'HAPUS DATA CONTOH';
+      const body = h(`<div class="stack">
+        <p>Seluruh transaksi, produk, pelanggan, cabang, karyawan, aset, dan akun demo akan dihapus permanen.
+        Master jabatan, channel penjualan, dan bagan akun tetap ada.</p>
+        <p class="note danger small">Tindakan ini tidak bisa dibatalkan. Lakukan sebelum mulai memakai sistem untuk data sungguhan.</p>
+        <label class="f req"><span>Ketik <code>${FRASA}</code> untuk melanjutkan</span>
+          <input data-confirm autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="${FRASA}">
+          <small data-hint class="muted">Huruf besar/kecil tidak masalah.</small></label></div>`);
+      const m = modal({ title: 'Hapus semua data contoh', body, actions: [
+        { label: 'Batal' },
+        { label: 'Hapus permanen', kind: 'danger solid', onClick: async () => {
+          const v = $('[data-confirm]', body).value;
+          if (v.trim().toUpperCase().replace(/\s+/g, ' ') !== FRASA) throw new Error(`Ketik persis: ${FRASA}`);
+          const r = await rpc('purge_demo', { p_confirm: v.trim() });
+          toast(`Data contoh dihapus (${r.akun_dihapus} akun).`);
+          setTimeout(() => location.reload(), 1200);
+        } },
+      ] });
+      const inp = $('[data-confirm]', m.body), btn = m.el.querySelectorAll('.mf .btn')[1];
+      const check = () => {
+        const ok = inp.value.trim().toUpperCase().replace(/\s+/g, ' ') === FRASA;
+        btn.disabled = !ok;
+        $('[data-hint]', m.body).textContent = ok ? '✓ Cocok — tombol hapus sudah aktif.' : 'Huruf besar/kecil tidak masalah.';
+      };
+      inp.addEventListener('input', check);
+      inp.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !btn.disabled) btn.click(); });
+      check();
     });
 
     $('#f', el).onsubmit = async (e) => {

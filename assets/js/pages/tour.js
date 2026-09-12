@@ -105,6 +105,13 @@ const STEPS = [
       <p>Setelah gaji periode itu disetujui, absensinya terkunci — tidak bisa diubah belakangan.</p>`,
   },
   {
+    id: 'assets', icon: '🛠️', title: 'Aset & mesin', nav: 'assets',
+    need: () => can('assets'),
+    body: `<p>Mesin laser, grafir, kendaraan, komputer kasir: siapa penanggung jawabnya, kapan jadwal servis berikutnya, dan berapa biaya yang sudah ditelan tiap unit.</p>
+      <p>Nilainya menyusut otomatis tiap bulan, jadi laba yang Anda lihat sudah memperhitungkan mesin yang makin tua.</p>
+      <p><b>Sambungannya:</b> setiap servis wajib ada notanya, dan pelepasan aset harus disetujui orang lain. Kalau biaya perawatan sebuah mesin terus naik melewati penyusutannya, itu tanda lebih murah menggantinya daripada terus memperbaikinya.</p>`,
+  },
+  {
     id: 'reports', icon: '📈', title: 'Laporan', nav: 'reports',
     need: () => can('reports') || can('dashboard'),
     body: `<p>Sepuluh laporan untuk memutuskan, bukan sekadar melihat: margin per channel, produk paling menguntungkan, stok mati, shrinkage per cabang, rekonsiliasi retur, scrap per operator, audit void kasir, riwayat selisih opname, riwayat harga supplier, dan produktivitas produksi.</p>`,
