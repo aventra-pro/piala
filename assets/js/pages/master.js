@@ -1,7 +1,5 @@
 // Master data: produk, BOM, cabang, channel, pelanggan, supplier, rekening, pengguna, pengaturan, audit
-import { sb, S, q, rpc, can, esc, fmt, route, pageHead, table, bindRows, lookups, uname, plate, chip, ask, toast, errMsg, go, refresh,
-  modal, formModal, upl, fileBtn, bindFiles, lineEditor, tabs, on, $, $$, h, ICON, downloadCSV, changed, emptyBox, CATEGORY, LOCKIND,
-  today, sum, setting } from '../core.js';
+import { sb, S, q, rpc, can, esc, fmt, route, pageHead, table, bindRows, lookups, uname, plate, chip, ask, toast, errMsg, go, refresh, modal, formModal, upl, fileBtn, bindFiles, lineEditor, tabs, on, $, $$, h, ICON, downloadCSV, changed, emptyBox, CATEGORY, LOCKIND, today, sum, setting } from '../core.js';
 
 const save = async (tblName, row, id) => id ? q(sb.from(tblName).update(row).eq('id', id)) : q(sb.from(tblName).insert(row));
 
@@ -357,6 +355,38 @@ route('settings', {
         <input name="${esc(r.key)}" value="${esc(r.value)}" ${/pct|days|hours|count|threshold|amount|limit/.test(r.key) ? 'inputmode="decimal"' : ''}>
         <small>${esc(r.key)}</small></label>`).join('')}
         <div class="span-all"><button class="btn primary">Simpan pengaturan</button></div></form></div></section>`;
+    const demoOn = String(setting('demo_data')) === 'on';
+    el.innerHTML += `<section class="panel" style="margin-top:14px"><div class="ph"><h2>Data contoh</h2>${
+      demoOn ? '<span class="chip warn">terpasang</span>' : '<span class="chip">tidak terpasang</span>'}</div><div class="pb">
+      ${demoOn ? `<p class="small">Sistem sedang berisi data contoh: 3 cabang, akun untuk semua jabatan, produk, dan transaksi lengkap sampai penggajian. Pakai untuk belajar dan melatih tim.</p>
+        <p class="note danger small">Menghapus data contoh akan mengosongkan <b>seluruh</b> transaksi, produk, pelanggan, cabang, dan akun demo. Lakukan sebelum mulai memakai sistem untuk data sungguhan.</p>
+        <button class="btn danger solid" id="purge">Hapus semua data contoh</button>`
+      : `<p class="small">Isi sistem dengan data contoh untuk mencoba semua menu tanpa takut merusak apa pun. Hanya bisa dijalankan saat belum ada transaksi sungguhan.</p>
+        <button class="btn primary" id="seed">Pasang data contoh</button>`}
+      </div></section>`;
+    $('#seed', el)?.addEventListener('click', async () => {
+      const ok = await ask('Pasang data contoh', 'Sistem akan diisi 3 cabang, 21 akun karyawan, produk, dan transaksi contoh selama 45 hari terakhir. Proses ini butuh beberapa detik.', { note: false, okLabel: 'Pasang sekarang' });
+      if (ok === null) return;
+      toast('Menyiapkan data contoh…');
+      try {
+        const r = await rpc('seed_demo', {});
+        modal({ title: 'Data contoh siap', size: 'wide',
+          body: `<p>Semua akun di bawah memakai kata sandi <b>${esc(r.password)}</b>. Coba masuk sebagai jabatan berbeda untuk melihat bedanya tampilan dan wewenang.</p>` +
+            table([{ l: 'Email', f: x => `<code>${esc(x.email)}</code>` }, { l: 'Nama', k: 'nama' }, { l: 'Jabatan', k: 'jabatan' }], r.akun || [], { cards: false }),
+          actions: [{ label: 'Muat ulang aplikasi', kind: 'primary', onClick: () => location.reload() }] });
+      } catch (err) { toast(errMsg(err), 'err'); }
+    });
+    $('#purge', el)?.addEventListener('click', async () => {
+      const t = await ask('Hapus semua data contoh',
+        'Seluruh transaksi, produk, pelanggan, cabang, karyawan, dan akun demo akan dihapus permanen. Master jabatan, channel, dan bagan akun tetap ada.',
+        { label: 'Ketik persis: HAPUS DATA CONTOH', minLen: 18, danger: true, okLabel: 'Hapus permanen', placeholder: 'HAPUS DATA CONTOH' });
+      if (!t) return;
+      try { const r = await rpc('purge_demo', { p_confirm: t.trim() });
+        toast(`Data contoh dihapus (${r.akun_dihapus} akun).`);
+        setTimeout(() => location.reload(), 1200);
+      } catch (err) { toast(errMsg(err), 'err'); }
+    });
+
     $('#f', el).onsubmit = async (e) => {
       e.preventDefault();
       try {
