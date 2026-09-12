@@ -16,6 +16,7 @@ import './pages/reports.js';
 import './pages/master.js';
 import './pages/hr.js';
 import './pages/announce.js';
+import './pages/assets.js';
 
 const NAV = [
   ['Ringkasan', [['home', 'Beranda'], ['approvals', 'Approval'], ['alerts', 'Peringatan']]],
@@ -27,6 +28,7 @@ const NAV = [
   ['Keuangan', [['payments', 'Verifikasi pembayaran'], ['receivables', 'Piutang'], ['cash', 'Kas cabang'], ['expenses', 'Biaya operasional'], ['payables', 'Utang supplier'], ['bank', 'Rekonsiliasi bank'], ['settlement', 'Settlement marketplace'], ['accounting', 'Laporan keuangan']]],
   ['SDM & penggajian', [['employees', 'Karyawan'], ['attendance', 'Absensi'], ['payroll', 'Penggajian'], ['advances', 'Kasbon'], ['charges', 'Pembebanan kerugian'], ['schemes', 'Skema gaji'], ['my-payslip', 'Slip gaji saya']]],
   ['Laporan', [['reports', 'Laporan manajemen'], ['hr-report', 'Laporan SDM']]],
+  ['Aset & mesin', [['assets', 'Aset & mesin']]],
   ['Master data', [['products', 'Produk & SKU'], ['bom', 'BOM / resep'], ['branches', 'Cabang & lokasi'], ['channels', 'Channel penjualan'], ['suppliers', 'Supplier'], ['banks', 'Rekening perusahaan'], ['users', 'Pengguna & akses'], ['settings', 'Pengaturan'], ['audit', 'Audit log']]],
   ['Komunikasi', [['announcements', 'Pengumuman']]],
 ];
@@ -36,21 +38,29 @@ let deferredInstall = null;
 
 // ---------- login ----------
 function renderLogin(mode = 'login') {
-  app.innerHTML = `<div class="login"><div class="login-card">
-    <div class="mark"><img src="assets/icons/icon-192.png" alt=""><span class="plate">${esc(APP_NAME)}</span></div>
-    <h1>${mode === 'reset' ? 'Buat kata sandi baru' : 'Masuk ke ERP'}</h1>
-    <p class="muted small">${mode === 'reset' ? 'Masukkan kata sandi baru untuk akun Anda.' : 'Gunakan email & kata sandi yang diberikan admin.'}</p>
-    <form class="stack" id="lf" style="margin-top:14px">
-      ${mode === 'reset' ? `<label class="f"><span>Kata sandi baru</span><input type="password" name="pw" minlength="8" required autocomplete="new-password"></label>`
-      : `<label class="f"><span>Email</span><input type="email" name="email" required autocomplete="username" inputmode="email"></label>
-         <label class="f"><span>Kata sandi</span><input type="password" name="pw" required autocomplete="current-password"></label>`}
-      <button class="btn primary" style="width:100%">${mode === 'reset' ? 'Simpan kata sandi' : 'Masuk'}</button>
-      ${mode === 'reset' ? '' : '<button type="button" class="btn ghost sm" id="forgot" style="width:100%">Lupa kata sandi?</button>'}
-      <div id="lerr"></div>
-    </form>
-    <div id="demoHint"></div>
-    <p class="small muted" style="margin:16px 0 0">v${APP_VERSION}</p>
-  </div></div>`;
+  app.innerHTML = `<div class="login">
+    <div class="login-glow" aria-hidden="true"></div>
+    <div class="login-card">
+      <div class="login-head">
+        <img src="assets/icons/icon-192.png" alt="" width="52" height="52">
+        <div><span class="plate">${esc(APP_NAME)}</span><div class="sub">Sistem manajemen piala &amp; akrilik</div></div>
+      </div>
+      <div class="login-body">
+        <h1>${mode === 'reset' ? 'Buat kata sandi baru' : 'Selamat datang kembali'}</h1>
+        <p class="muted">${mode === 'reset' ? 'Masukkan kata sandi baru untuk akun Anda.' : 'Masuk untuk melanjutkan pekerjaan Anda.'}</p>
+        <form class="stack" id="lf">
+          ${mode === 'reset' ? `<label class="f"><span>Kata sandi baru</span><input type="password" name="pw" minlength="8" required autocomplete="new-password" placeholder="Minimal 8 karakter"></label>`
+          : `<label class="f"><span>Email</span><input type="email" name="email" required autocomplete="username" inputmode="email" placeholder="nama@perusahaan.com"></label>
+             <label class="f"><span>Kata sandi</span><input type="password" name="pw" required autocomplete="current-password" placeholder="••••••••"></label>`}
+          <button class="btn primary lg">${mode === 'reset' ? 'Simpan kata sandi' : 'Masuk'}</button>
+          ${mode === 'reset' ? '' : '<button type="button" class="btn ghost sm" id="forgot">Lupa kata sandi?</button>'}
+          <div id="lerr"></div>
+        </form>
+        <div id="demoHint"></div>
+      </div>
+      <div class="login-foot"><span>v${APP_VERSION}</span><span>Setiap tindakan tercatat atas nama Anda</span></div>
+    </div>
+  </div>`;
   const f = $('#lf');
   f.onsubmit = async (e) => {
     e.preventDefault();
