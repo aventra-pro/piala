@@ -1,6 +1,6 @@
 // Service worker: hanya menyimpan kerangka aplikasi agar bisa dibuka cepat.
 // Data transaksi TIDAK PERNAH di-cache — angka stok dan uang harus selalu dari server.
-const V = 'kp-v1';
+const V = 'kp-v2';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './assets/css/app.css',
@@ -8,6 +8,7 @@ const SHELL = [
   './assets/js/pages/dashboard.js', './assets/js/pages/sales.js', './assets/js/pages/production.js',
   './assets/js/pages/logistics.js', './assets/js/pages/inventory.js', './assets/js/pages/purchasing.js',
   './assets/js/pages/finance.js', './assets/js/pages/reports.js', './assets/js/pages/master.js',
+  './assets/js/pages/hr.js', './assets/js/pages/announce.js', './assets/js/pages/tour.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png',
 ];
 

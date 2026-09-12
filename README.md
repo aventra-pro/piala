@@ -48,6 +48,54 @@ Menu **Authentication** → **URL Configuration**:
 Ini diperlukan agar tautan "lupa kata sandi" kembali ke aplikasi dengan benar.
 Untuk uji coba lokal, tambahkan juga `http://localhost:8000/`.
 
+
+---
+
+## Bagian 1B — Isi data contoh (sangat disarankan untuk mencoba)
+
+Sebelum memasukkan data sungguhan, isi dulu sistem dengan data contoh supaya semua menu bisa
+dijelajahi dan tim bisa berlatih tanpa takut merusak apa pun.
+
+Login sebagai Owner → **Master data → Pengaturan** → bagian **Data contoh** → **Pasang data contoh**.
+(Atau jalankan `select seed_demo();` di SQL Editor.)
+
+Yang dibuat:
+
+- **3 cabang**: Gudang Pusat Kertajaya, Cabang Kertajaya, Cabang Rungkut — lengkap dengan lokasi utama, karantina, scrap, dan sisa bahan
+- **21 akun login**, satu untuk tiap jabatan, semua berkata sandi **`Demo#2026`**
+- Produk lengkap: komponen, akrilik lembaran, barang jadi, piala rakitan dengan BOM, dan jasa
+- Transaksi 45 hari terakhir: pembelian + penerimaan, transfer antar cabang (termasuk satu yang selisih),
+  puluhan transaksi kasir, pesanan custom dari desain sampai kirim, pesanan marketplace, retur, settlement,
+  cycle count, biaya operasional
+- Absensi sebulan, kasbon berjalan, pembebanan kerugian, dan satu periode gaji yang sudah dibayar
+- Tiga pengumuman internal
+
+Akun contoh (semua `@kertajayapiala.demo`):
+
+| Email | Jabatan | Yang menarik dicoba |
+|---|---|---|
+| `owner@` | Owner | Semua menu, dashboard laba, matriks hak akses |
+| `area@` | Manajer Operasional Wilayah | Kotak approval: PO, selisih opname, berita acara transfer |
+| `kasir1@` | Kasir | Kasir dengan sesi kas terbuka + satu transaksi tertahan karena diskon |
+| `kepalacabang1@` | Kepala Cabang | Menyetujui diskon kasir, tutup kas, absensi cabang |
+| `produksi@` / `operator1@` | Kepala Produksi / Operator | Papan produksi, ambil bahan, scrap, sisa akrilik |
+| `qc@` | QC & Retur | Antrean QC dan barang retur di karantina |
+| `logistik@` | Logistik | Packing dengan scan + foto, klaim ekspedisi |
+| `cs@` | Admin Online & CS | Pesanan chat, import marketplace, retur |
+| `keuangan@` / `verifikator@` | Keuangan | Verifikasi pembayaran, rekonsiliasi, settlement |
+| `hrd@` | Manajer SDM | Penggajian, skema gaji, pembebanan kerugian |
+| `pembelian@` / `admingudang@` | Pembelian / Gudang | PO dan penerimaan barang (perhatikan keduanya tidak boleh orang yang sama) |
+
+Selebihnya: `gudang@`, `desain@`, `operator2@`, `kepalacabang2@`, `kasir2@`, `akuntansi@`, `absensi@`.
+
+**Menghapus data contoh:** Pengaturan → Data contoh → **Hapus semua data contoh**, lalu ketik
+`HAPUS DATA CONTOH`. Ini mengosongkan seluruh transaksi, produk, pelanggan, cabang, dan akun demo.
+Master jabatan, channel penjualan, dan bagan akun tetap ada. Lakukan sebelum mulai memakai
+sistem untuk data sungguhan.
+
+> Data contoh hanya bisa dipasang saat belum ada transaksi sungguhan, jadi tidak mungkin tercampur
+> dengan data asli Anda.
+
 ---
 
 ## Bagian 2 — Hosting di GitHub Pages
@@ -84,7 +132,8 @@ Login sebagai Owner, lalu isi berurutan:
 | 6 | Master data → BOM / resep | Resep tiap piala rakitan: komponen apa saja per unit, plus perkiraan waste akrilik. |
 | 7 | Master data → Pengguna & akses | Beri jabatan & cabang untuk tiap karyawan (buat akunnya dulu di Supabase Authentication). |
 | 8 | Master data → Pengaturan | Ambang approval, DP minimum, batas peringatan. |
-| 9 | Pembelian → Purchase order | Masukkan stok awal lewat PO + penerimaan barang, supaya HPP terbentuk benar. |
+| 9 | SDM → Skema gaji, lalu Karyawan | Buat skema (bulanan, harian, borongan, komisi), lalu daftarkan karyawan dan hubungkan ke akun loginnya. |
+| 10 | Pembelian → Purchase order | Masukkan stok awal lewat PO + penerimaan barang, supaya HPP terbentuk benar. |
 
 > **Stok awal sebaiknya lewat PO**, bukan lewat penyesuaian. Dengan begitu harga beli tercatat dan
 > HPP rata-rata punya dasar yang benar sejak hari pertama.
@@ -115,6 +164,54 @@ Pembayaran dicocokkan dengan mutasi bank. Pencairan marketplace dicocokkan denga
 **Setiap selisih punya nama.** Selisih transfer, selisih kas, dan disposisi retur wajib mencantumkan
 penanggung jawab — bukan sekadar "hilang".
 
+
+---
+
+## Bagian 4B — SDM & penggajian
+
+Gaji tidak diketik dari nol; ia dirakit dari data yang sudah ada di sistem.
+
+| Komponen | Diambil dari |
+|---|---|
+| Tunjangan transport & uang makan | Jumlah hari hadir di menu Absensi |
+| Uang lembur | Jam lembur yang dicatat di absensi |
+| Upah borongan | Unit yang **lulus QC** pada periode itu, bukan yang sekadar dikerjakan |
+| Komisi penjualan | **Laba** pesanan yang ia buat, bukan omzet |
+| Potongan ketidakhadiran | Hari alpa, dihitung dari gaji pokok dibagi hari kerja |
+| Cicilan kasbon | Kasbon yang sudah disetujui dan dicairkan |
+| Potongan tanggung jawab | Selisih kas, scrap, retur, atau selisih transfer yang sudah ditetapkan penanggung jawabnya |
+
+Dua pilihan desain yang perlu diketahui:
+
+**Komisi dihitung dari laba, bukan omzet.** Artinya obral diskon besar menurunkan komisi si penjual
+sendiri. Kepentingan penjual jadi searah dengan kepentingan toko tanpa perlu diawasi terus-menerus.
+
+**Potongan dibatasi 50% dari gaji bruto** (bisa diubah di Pengaturan). Kalau kasbon dan pembebanan
+melebihi batas, kelebihannya **ditunda ke bulan berikutnya**, bukan dihanguskan — karyawan tetap
+membawa pulang gaji yang layak, dan perusahaan tetap tidak kehilangan haknya.
+
+Pemisahan tugas tetap berlaku: SDM menyusun daftar gaji, atasan menyetujui, keuangan mencairkan —
+tiga orang berbeda. Jabatan Manajer SDM bahkan tidak boleh dirangkap dengan Manajer Keuangan.
+
+Setiap karyawan bisa membuka **Slip gaji saya** untuk melihat rinciannya sendiri, termasuk alasan
+tertulis di balik setiap potongan.
+
+---
+
+## Bagian 4C — Pengumuman & notifikasi
+
+**Lonceng** di kanan atas menggabungkan tiga hal: tugas yang menunggu keputusan Anda, pengumuman
+yang belum dibaca, dan peringatan operasional. Angka merahnya menyesuaikan jabatan — kasir tidak
+melihat antrean approval PO.
+
+**Pengumuman** (menu Komunikasi) bisa ditujukan ke jabatan atau cabang tertentu, disematkan supaya
+selalu tampil, dan diberi tanda "wajib konfirmasi dibaca". Pembuatnya bisa melihat siapa saja yang
+sudah membaca dan mengkonfirmasi — berguna untuk perubahan aturan atau harga.
+
+**Perkenalan menu** muncul otomatis saat seseorang login pertama kali. Isinya menjelaskan tiap menu:
+apa gunanya, apa isinya, dan bagaimana pekerjaan jabatan lain menyambung ke situ. Bisa dilewati
+satu per satu atau sekaligus, dan dibuka lagi kapan saja lewat menu akun di kanan atas.
+
 ---
 
 ## Bagian 5 — Alur harian singkat
@@ -130,6 +227,10 @@ penanggung jawab — bukan sekadar "hilang".
 **Retur**: dicatat saat pelanggan mengajukan (bukan saat barang datang) → barang sampai, direkam unboxing
 → masuk karantina → disposisi (perbaiki / jual diskon / hapus buku) dengan penanggung jawab biaya.
 
+**Gaji bulanan**: absensi diisi tiap hari → akhir bulan SDM membuat periode gaji → sistem menarik
+absensi, lembur, unit lulus QC, komisi, kasbon, dan pembebanan → diajukan → atasan menyetujui →
+keuangan mencairkan dan mengunggah bukti.
+
 ---
 
 ## Bagian 6 — Isi folder
@@ -143,8 +244,9 @@ assets/js/config.js         alamat & kunci Supabase
 assets/js/core.js           koneksi, komponen UI, router
 assets/js/app.js            login, menu, kerangka aplikasi
 assets/js/pages/            satu berkas per kelompok halaman
+                            (termasuk hr.js, announce.js, tour.js)
 supabase/schema.sql         seluruh database (jalankan di SQL Editor)
-supabase/parts/             sumber schema, terpisah per bagian
+supabase/parts/             sumber schema, terpisah per bagian (01 inti … 12 data contoh)
 ```
 
 ---
@@ -171,3 +273,17 @@ Master data → BOM lalu tekan "Hitung ulang HPP semua" setelah resep atau harga
 **Aplikasi tidak menawarkan "pasang ke layar utama".**
 Buka lewat Chrome Android dengan alamat `https://` (bukan `file://`), dan pastikan sudah dibuka
 beberapa detik. Bisa juga lewat menu titik tiga → "Tambahkan ke layar utama".
+
+**Apakah data contoh bisa tercampur dengan data asli?**
+Tidak. Pemasangan data contoh ditolak kalau sudah ada transaksi sungguhan di sistem. Sebaliknya,
+penghapusan data contoh mengosongkan seluruh transaksi — jadi lakukan sebelum mulai memakai
+sistem untuk data asli, bukan sesudahnya.
+
+**Akun demo tidak bisa login.**
+Kalau pemasangan data contoh gagal membuat akun (versi Supabase berbeda-beda), sistem akan memberi
+tahu akun mana yang gagal. Buat akun itu manual di Authentication → Users dengan email yang sama,
+lalu pasang ulang data contohnya.
+
+**Bisakah perkenalan menu dimatikan untuk semua orang?**
+Perkenalan hanya muncul sekali per orang. Setelah diselesaikan atau dilewati, ia tidak muncul lagi
+kecuali dibuka sendiri dari menu akun.
