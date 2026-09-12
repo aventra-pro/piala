@@ -240,9 +240,17 @@ async function boot() {
   lookups().catch(() => {});
   await render();
   updateBadges();
-  if (!S.me.onboarded_at) setTimeout(() => startTour(), 600);
+  maybeStartTour();
   clearInterval(window.__badgeTimer);
   window.__badgeTimer = setInterval(updateBadges, 60000);
+}
+
+/** Perkenalan dijalankan otomatis sekali, begitu menu samping siap dipakai. */
+function maybeStartTour(tries = 0) {
+  if (!S.me || S.me.onboarded_at) return;
+  if (document.querySelector('.tour-pop')) return;
+  if ($('.side .nav-items a')) { startTour(); return; }
+  if (tries < 40) setTimeout(() => maybeStartTour(tries + 1), 120);
 }
 
 window.addEventListener('hashchange', () => { if (S.me) { render(); } });
