@@ -48,6 +48,7 @@ function renderLogin(mode = 'login') {
       ${mode === 'reset' ? '' : '<button type="button" class="btn ghost sm" id="forgot" style="width:100%">Lupa kata sandi?</button>'}
       <div id="lerr"></div>
     </form>
+    <div id="demoHint"></div>
     <p class="small muted" style="margin:16px 0 0">v${APP_VERSION}</p>
   </div></div>`;
   const f = $('#lf');
@@ -65,6 +66,15 @@ function renderLogin(mode = 'login') {
     } catch (err) { $('#lerr').innerHTML = `<div class="note danger">${esc(errMsg(err))}</div>`; }
     finally { btn.disabled = false; }
   };
+  if (mode !== 'reset') {
+    rpc('demo_login_hint').then(hint => {
+      if (!hint?.on || !$('#demoHint')) return;
+      $('#demoHint').innerHTML = `<div class="demo-hint"><b>Sistem berisi data contoh.</b> Coba masuk sebagai Owner:<br>
+        <code>${esc(hint.email)}</code> / <code>${esc(hint.password)}</code>
+        <div class="actions" style="margin-top:8px"><button class="btn sm" id="fillDemo">Isi otomatis & masuk</button></div></div>`;
+      $('#fillDemo').onclick = () => { f.email.value = hint.email; f.pw.value = hint.password; f.requestSubmit(); };
+    }).catch(() => {});
+  }
   $('#forgot')?.addEventListener('click', async () => {
     const email = f.email.value.trim();
     if (!email) return $('#lerr').innerHTML = '<div class="note warn">Isi email dulu, lalu tekan "Lupa kata sandi?".</div>';
@@ -100,6 +110,11 @@ function renderShell() {
       <nav>${navHTML()}</nav>
     </aside>
     <div class="main">
+      <div class="demo-bar" id="demoBar" hidden>
+        <span class="grow" style="flex:1">Sistem ini sedang berisi <b>data contoh</b> — aman untuk dicoba, semua angka fiktif.</span>
+        <a class="btn sm" href="#/settings">Hapus / kelola</a>
+        <button class="btn sm ghost" id="demoHide" aria-label="Sembunyikan">Sembunyikan</button>
+      </div>
       <div class="install-bar" id="install"><span class="grow">Pasang aplikasi ini di layar utama HP agar bisa dibuka seperti aplikasi biasa.</span><button class="btn sm brass" id="doInstall">Pasang</button><button class="btn sm ghost" id="noInstall">Nanti</button></div>
       <header class="topbar">
         <button class="btn ghost icon menu-btn" id="menuBtn" aria-label="Buka menu">${ICON.menu}</button>
@@ -131,6 +146,8 @@ function renderShell() {
   $('#brSel').onchange = (e) => { setBranch(e.target.value); render(); updateBadges(); };
   $('#userBtn').onclick = userMenu;
   $('#bellBtn').onclick = (e) => { e.stopPropagation(); notifPanel(e.currentTarget); };
+  if (String(S.me.settings?.demo_data) === 'on' && !localStorage.getItem('kp.demohide')) $('#demoBar').hidden = false;
+  $('#demoHide').onclick = () => { $('#demoBar').hidden = true; localStorage.setItem('kp.demohide', '1'); };
   if (deferredInstall && !localStorage.getItem('kp.noinstall')) $('#install').classList.add('show');
   $('#doInstall').onclick = async () => { $('#install').classList.remove('show'); deferredInstall?.prompt(); deferredInstall = null; };
   $('#noInstall').onclick = () => { $('#install').classList.remove('show'); localStorage.setItem('kp.noinstall', '1'); };
