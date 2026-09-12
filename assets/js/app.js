@@ -4,6 +4,8 @@
 import { sb, S, $, $$, h, esc, on, toast, rpc, errMsg, setBranch, can, ICON, parseHash, allRoutes, routeAllowed, spinner, go, formModal, lookups } from './core.js';
 import { APP_NAME, APP_VERSION } from './config.js';
 import { countApprovals } from './pages/dashboard.js';
+import { startTour } from './pages/tour.js';
+import { notifPanel, announceCard, bindAnnounce } from './pages/announce.js';
 import './pages/sales.js';
 import './pages/production.js';
 import './pages/logistics.js';
@@ -12,6 +14,8 @@ import './pages/purchasing.js';
 import './pages/finance.js';
 import './pages/reports.js';
 import './pages/master.js';
+import './pages/hr.js';
+import './pages/announce.js';
 
 const NAV = [
   ['Ringkasan', [['home', 'Beranda'], ['approvals', 'Approval'], ['alerts', 'Peringatan']]],
@@ -21,8 +25,10 @@ const NAV = [
   ['Persediaan', [['stock', 'Stok per lokasi'], ['ledger', 'Kartu stok'], ['transfers', 'Transfer stok'], ['opname', 'Stock opname'], ['adjustments', 'Penyesuaian stok'], ['allocation', 'Alokasi channel'], ['labels', 'Label barcode & serial']]],
   ['Pembelian', [['po', 'Purchase order'], ['grn', 'Penerimaan barang'], ['sup-invoices', 'Faktur supplier'], ['purchase-returns', 'Retur pembelian']]],
   ['Keuangan', [['payments', 'Verifikasi pembayaran'], ['receivables', 'Piutang'], ['cash', 'Kas cabang'], ['expenses', 'Biaya operasional'], ['payables', 'Utang supplier'], ['bank', 'Rekonsiliasi bank'], ['settlement', 'Settlement marketplace'], ['accounting', 'Laporan keuangan']]],
-  ['Laporan', [['reports', 'Laporan manajemen']]],
+  ['SDM & penggajian', [['employees', 'Karyawan'], ['attendance', 'Absensi'], ['payroll', 'Penggajian'], ['advances', 'Kasbon'], ['charges', 'Pembebanan kerugian'], ['schemes', 'Skema gaji'], ['my-payslip', 'Slip gaji saya']]],
+  ['Laporan', [['reports', 'Laporan manajemen'], ['hr-report', 'Laporan SDM']]],
   ['Master data', [['products', 'Produk & SKU'], ['bom', 'BOM / resep'], ['branches', 'Cabang & lokasi'], ['channels', 'Channel penjualan'], ['suppliers', 'Supplier'], ['banks', 'Rekening perusahaan'], ['users', 'Pengguna & akses'], ['settings', 'Pengaturan'], ['audit', 'Audit log']]],
+  ['Komunikasi', [['announcements', 'Pengumuman']]],
 ];
 
 const app = document.getElementById('app');
@@ -99,10 +105,10 @@ function renderShell() {
         <button class="btn ghost icon menu-btn" id="menuBtn" aria-label="Buka menu">${ICON.menu}</button>
         <select id="brSel" aria-label="Cabang aktif">${brOpts}</select>
         <div class="grow"></div>
-        <a class="btn ghost icon" href="#/alerts" aria-label="Peringatan" style="position:relative">${ICON.bell}<span class="badge red hide" data-badge="alerts" style="position:absolute;top:2px;right:0"></span></a>
+        <button class="btn ghost icon" id="bellBtn" aria-label="Notifikasi" style="position:relative">${ICON.bell}<span class="badge red hide" data-badge="notif" style="position:absolute;top:2px;right:0"></span></button>
         <button class="user-chip" id="userBtn"><span class="av">${esc(initials)}</span><span class="nm">${esc(me.full_name || me.email)}<br><span class="muted small">${esc(me.roles.map(r => r.name).join(', ') || 'Belum ada jabatan')}</span></span></button>
       </header>
-      <main class="content" id="view"></main>
+      <main class="content"><div id="pinned" class="stack" style="margin-bottom:14px"></div><div id="view"></div></main>
     </div>
     <nav class="bottom-nav" aria-label="Navigasi cepat">
       <a href="#/home" data-r="home">${ICON.home}<span>Beranda</span></a>
@@ -124,6 +130,7 @@ function renderShell() {
   });
   $('#brSel').onchange = (e) => { setBranch(e.target.value); render(); updateBadges(); };
   $('#userBtn').onclick = userMenu;
+  $('#bellBtn').onclick = (e) => { e.stopPropagation(); notifPanel(e.currentTarget); };
   if (deferredInstall && !localStorage.getItem('kp.noinstall')) $('#install').classList.add('show');
   $('#doInstall').onclick = async () => { $('#install').classList.remove('show'); deferredInstall?.prompt(); deferredInstall = null; };
   $('#noInstall').onclick = () => { $('#install').classList.remove('show'); localStorage.setItem('kp.noinstall', '1'); };
@@ -136,7 +143,7 @@ async function userMenu() {
     intro: `<dl class="kv" style="margin-bottom:14px"><dt>Nama</dt><dd>${esc(me.full_name || '—')}</dd><dt>Email</dt><dd>${esc(me.email)}</dd>
       <dt>Jabatan</dt><dd>${esc(me.roles.map(r => r.name).join(', ') || '—')}</dd><dt>Cabang</dt><dd>${me.is_global ? 'Semua cabang (HQ)' : esc(me.branches.map(b => b.name).join(', '))}</dd>
       <dt>Batas diskon</dt><dd>${me.discount_limit}%</dd></dl>
-      <div class="actions" style="margin-bottom:14px"><button class="btn danger" id="logout">Keluar</button></div>`,
+      <div class="actions" style="margin-bottom:14px"><button class="btn" id="replayTour">Ulangi perkenalan</button><button class="btn danger" id="logout">Keluar</button></div>`,
     fields: [{ name: 'pw', label: 'Kata sandi baru (kosongkan jika tidak diganti)', type: 'password', span: 2 }],
     onSubmit: async (v) => {
       if (!v.pw) return v;
@@ -148,6 +155,7 @@ async function userMenu() {
   void v;
 }
 document.addEventListener('click', async (e) => {
+  if (e.target.id === 'replayTour') { $('.modal-back')?.remove(); startTour({ force: true }); }
   if (e.target.id === 'logout') { await sb.auth.signOut(); localStorage.removeItem('kp.branch'); location.hash = ''; location.reload(); }
 });
 
@@ -178,10 +186,20 @@ async function render() {
 
 async function updateBadges() {
   try {
-    const [n, alerts] = await Promise.all([countApprovals(), rpc('rpt_alerts', { p_branch: S.branch || null })]);
-    const set = (k, v) => $$(`[data-badge="${k}"]`).forEach(b => { b.textContent = v; b.classList.toggle('hide', !v); });
-    set('approvals', n); set('alerts', alerts?.length || 0);
+    const [n, notif] = await Promise.all([countApprovals(), rpc('rpt_notifications', { p_branch: S.branch || null })]);
+    const set = (k, v) => $$(`[data-badge="${k}"]`).forEach(b => { b.textContent = v > 99 ? '99+' : v; b.classList.toggle('hide', !v); });
+    set('approvals', n);
+    set('notif', notif?.unread || 0);
+    set('announcements', (notif?.announcements || []).length);
+    renderPinned(notif?.announcements || []);
   } catch { /* abaikan */ }
+}
+
+function renderPinned(list) {
+  const host = $('#pinned'); if (!host) return;
+  const urgent = list.filter(a => a.pinned || a.level === 'darurat' || a.require_ack);
+  host.innerHTML = urgent.map(a => announceCard(a, { compact: true })).join('');
+  bindAnnounce(host, updateBadges);
 }
 
 // ---------- boot ----------
@@ -205,6 +223,7 @@ async function boot() {
   lookups().catch(() => {});
   await render();
   updateBadges();
+  if (!S.me.onboarded_at) setTimeout(() => startTour(), 600);
   clearInterval(window.__badgeTimer);
   window.__badgeTimer = setInterval(updateBadges, 60000);
 }
